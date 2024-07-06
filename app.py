@@ -3,12 +3,18 @@
 import os
 import re
 import time
+import chardet
 import pandas as pd
 import tempfile
 import streamlit as st
 from openai import OpenAI
 
 st.set_page_config(page_title="File Searcher", page_icon="👀")
+
+def detect_encoding(file_path):
+    with open(file_path, 'rb') as file:
+        result = chardet.detect(file.read())
+    return result['encoding']
 
 def search_files(root_folder, exclude_extensions, include_extensions, regex_pattern):
     file_list = []
@@ -32,7 +38,7 @@ def search_files(root_folder, exclude_extensions, include_extensions, regex_patt
                 progress_bar.progress(int(100 * index / totla_file_cnt), file_path)  
                 relative_path = os.path.relpath(file_path, root_folder)  
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as file:
+                    with open(file_path, 'r', encoding=detect_encoding(file_path)) as file:
                         lines = file.readlines()
                         for i, line in enumerate(lines):
                             if re.search(regex_pattern, line):
@@ -49,35 +55,38 @@ def search_files(root_folder, exclude_extensions, include_extensions, regex_patt
     return file_list
 
 @st.cache_data
-def get_regex(prompt):   
-    client = OpenAI()
-    assistant_id = 'asst_z3EJn8lrcE2zBxRZWxTydCqH'
-    thread_id = ""
-    if 'thread_id' not in st.session_state:
-        thread = client.beta.threads.create()
-        # print(thread)
-        st.session_state.thread_id = thread.id
-    thread_id = st.session_state.thread_id
-    
-    message = client.beta.threads.messages.create(
-        thread_id = thread_id,
-        role="user",
-        content=prompt,
-    )
-    run = client.beta.threads.runs.create(
-        thread_id=thread_id,
-        assistant_id=assistant_id,
-    )
-    while run.status != 'completed' :
-        time.sleep(0.1)
-        run = client.beta.threads.runs.retrieve(
-            thread_id=thread_id,
-            run_id=run.id,
+def get_regex(prompt):  
+    try: 
+        client = OpenAI()
+        assistant_id = 'asst_z3EJn8lrcE2zBxRZWxTydCqH'
+        thread_id = ""
+        if 'thread_id' not in st.session_state:
+            thread = client.beta.threads.create()
+            # print(thread)
+            st.session_state.thread_id = thread.id
+        thread_id = st.session_state.thread_id
+        
+        message = client.beta.threads.messages.create(
+            thread_id = thread_id,
+            role="user",
+            content=prompt,
         )
-    messages = client.beta.threads.messages.list(thread_id=thread_id, run_id = run.id)
-    regex_pattern = messages.data[0].content[0].text.value
-    return regex_pattern
-    
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=assistant_id,
+        )
+        while run.status != 'completed' :
+            time.sleep(0.1)
+            run = client.beta.threads.runs.retrieve(
+                thread_id=thread_id,
+                run_id=run.id,
+            )
+        messages = client.beta.threads.messages.list(thread_id=thread_id, run_id = run.id)
+        regex_pattern = messages.data[0].content[0].text.value
+        return regex_pattern
+    except:
+        # 오류가 발생하면 None을 반환
+        return None   
 def main():
     st.title(":ladybug:")
     root_folder = st.text_input("시작할 폴더:")
@@ -86,8 +95,9 @@ def main():
     prompt = st.text_input("검색하고 싶은 내용을 입력하세요")
     
     regex_pattern= ""
-    if len(prompt) > 0:
+    if len(prompt) > 0 :
         regex_pattern = get_regex(prompt)
+    
     regex_pattern = st.text_input("정규식:", value=regex_pattern)
     regex_pattern = "r'{}'".format(regex_pattern.replace("`",""))
 
