@@ -1,26 +1,86 @@
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
+import os
+import re
+import time
+import chardet
+import pandas as pd
+import tempfile
 import streamlit as st
-from openai import OpenAI
-client = OpenAI()
-# assistants = client.beta.assistants.create(
-#     name ="정규식 변환기",
-#     instructions ="""
-#         당신은 정규식을 모르는 초보자를 위한 정규식 변환기 입니다. 
-#         사용자가 원하는 정규식을 입력하면 다른 설명 없이 사용자가 요청하는 정규식만 알려 줘야 합니다. 
-#         사용자가 정규식을 메시지로 받아 바로 활용해야 하기 때문입니다.
-#     """,
-#     tools=[{"type": "code_interpreter"}],
-#     model="gpt-4o",
-#     temperature=0.0,
-# )
-# print(assistants)
-# Assistant(id='asst_z3EJn8lrcE2zBxRZWxTydCqH', created_at=1720229892, description=None, instructions='\n        당신은 정규식을 모르는 초보자를 위한 정규식 변환기 입니다. \n        사용자가 원하는 정규식을 입력하면 다른 설명 없이 사용자가 요청하는 정규식만 알려 줘야 합니다. \n        사용자가 정규식을 메시지로 받아 바로 활용해야 하기 때문입니다.\n    ', metadata={}, model='gpt-4o', name='정규식 변환기', object='assistant', tools=[CodeInterpreterTool(type='code_interpreter'), FileSearchTool(type='file_search', file_search=None)], response_format='auto', temperature=0.8, tool_resources=ToolResources(code_interpreter=ToolResourcesCodeInterpreter(file_ids=[]), file_search=ToolResourcesFileSearch(vector_store_ids=[])), top_p=1.0)
-# assistants = client.beta.assistants.update(
-#     assistant_id = assistant_id,
-#     temperature=0.0,
-#     tools=[{"type": "code_interpreter"}],
-# )
-#thread = client.beta.threads.create()
-#print(thread)
-#Thread(id='thread_Vg9QGDV8mBF7tN3QpK3Xqznz', created_at=1720248292, metadata={}, object='thread', tool_resources=ToolResources(code_interpreter=None, file_search=None))
+
+st.set_page_config(page_title="File Searcher", page_icon="👀")
+
+def detect_encoding(file_path):
+    with open(file_path, 'rb') as file:
+        result = chardet.detect(file.read())
+    return result['encoding']
+
+def search_files(root_folder, exclude_extensions, include_extensions, regex_pattern):
+    file_list = []
+    progress_bar = st.progress(0, text=root_folder)
+    index = 0
+    totla_file_cnt = 0
+    for dirpath, dirnames, filenames in os.walk(root_folder):
+        for filename in  filenames:
+            file_path = os.path.join(dirpath, filename)           
+            file_ext = os.path.splitext(filename)[1][1:].lower()
+            if (not exclude_extensions or file_ext not in exclude_extensions) and (not include_extensions or file_ext in include_extensions):
+                totla_file_cnt += 1
+            
+    for dirpath, dirnames, filenames in os.walk(root_folder):
+        relative_path = os.path.relpath(dirpath, root_folder)
+        for filename in  filenames:
+            file_path = os.path.join(dirpath, filename)           
+            file_ext = os.path.splitext(filename)[1][1:].lower()
+            if (not exclude_extensions or file_ext not in exclude_extensions) and (not include_extensions or file_ext in include_extensions):
+                index += 1                
+                progress_bar.progress(int(100 * index / totla_file_cnt), file_path)  
+                relative_path = os.path.relpath(file_path, root_folder)  
+                try:
+                    with open(file_path, 'r', encoding=detect_encoding(file_path)) as file:
+                        lines = file.readlines()
+                        for i, line in enumerate(lines):
+                            if re.search(regex_pattern, line):
+                                file_list.append({
+                                    'File Path': relative_path,
+                                    'File Name': filename,
+                                    'Extension': file_ext,
+                                    'Line Count': i,
+                                    'Content': line
+                                })
+                except (IOError, UnicodeDecodeError):
+                    continue
+
+    return file_list
+
+def main():
+    st.title("👀")
+    root_folder = st.text_input("시작할 폴더:")
+    exclude_extensions = st.text_input("제외할 확장자 (comma-separated):")
+    include_extensions = st.text_input("포함할 확장자 (comma-separated):")
+    regex_pattern = st.text_input("정규식:")
+    regex_pattern = "r'{}'".format(regex_pattern.replace("`",""))
+
+    if st.button("Search Files"):
+        exclude_extensions = [ext.strip().lower() for ext in exclude_extensions.split(',') if ext.strip()]
+        include_extensions = [ext.strip().lower() for ext in include_extensions.split(',') if ext.strip()]
+        file_list = search_files(root_folder, exclude_extensions, include_extensions, regex_pattern)
+
+        if file_list:
+            df = pd.DataFrame(file_list)         
+            st.write(df)
+            temp_dir = tempfile.TemporaryDirectory()
+            file_name="file_search_results.xlsx"
+            temp_filepath = os.path.join(temp_dir.name, file_name)
+            df.to_excel(temp_filepath, index=False)
+            st.download_button(
+                label="Download as Excel",
+                data=temp_filepath,
+                file_name=file_name,
+                mime="application/vnd.ms-excel",
+            )
+        else:
+            st.write("No files found matching the search criteria.")
+
+if __name__ == "__main__":
+    main()
