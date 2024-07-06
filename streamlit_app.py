@@ -41,13 +41,15 @@ def search_files(root_folder, exclude_extensions, include_extensions, regex_patt
                     with open(file_path, 'r', encoding=detect_encoding(file_path)) as file:
                         lines = file.readlines()
                         for i, line in enumerate(lines):
-                            if re.search(regex_pattern, line):
+                            match = re.search(regex_pattern, line)
+                            if match :
                                 file_list.append({
-                                    'File Path': relative_path,
+                                    'File Path': os.path.relpath(dirpath, root_folder),
                                     'File Name': filename,
                                     'Extension': file_ext,
                                     'Line Count': i,
-                                    'Content': line
+                                    'Content': match.group(),
+                                    'Org-Content': line
                                 })
                 except (IOError, UnicodeDecodeError):
                     continue

@@ -69,6 +69,7 @@ def main():
     global progress_var, progress_bar
     root = tk.Tk()
     root.title("File Search")
+    root.geometry("360x200")
 
     # 입력 필드 생성
     label_root_folder = tk.Label(root, text="시작할 폴더:")
@@ -94,15 +95,15 @@ def main():
 
     # 레이아웃 설정
     label_root_folder.grid(row=0, column=0, padx=5, pady=5)
-    entry_root_folder.grid(row=0, column=1, padx=5, pady=5)
+    entry_root_folder.grid(row=0, column=1, columnspan=2, padx=5, pady=5)
     label_exclude_extensions.grid(row=1, column=0, padx=5, pady=5)
-    entry_exclude_extensions.grid(row=1, column=1, padx=5, pady=5)
+    entry_exclude_extensions.grid(row=1, column=1, columnspan=2, padx=5, pady=5)
     label_include_extensions.grid(row=2, column=0, padx=5, pady=5)
-    entry_include_extensions.grid(row=2, column=1, padx=5, pady=5)
+    entry_include_extensions.grid(row=2, column=1, columnspan=2, padx=5, pady=5)
     label_regex_pattern.grid(row=3, column=0, padx=5, pady=5)
-    entry_regex_pattern.grid(row=3, column=1, padx=5, pady=5)
-    progress_bar.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
-    button_search.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+    entry_regex_pattern.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
+    progress_bar.grid(row=4, column=0, columnspan=3, padx=5, pady=5)
+    button_search.grid(row=5, column=0, columnspan=3, padx=5, pady=5)
 
     root.mainloop()
 
