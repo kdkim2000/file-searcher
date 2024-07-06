@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.xlsx
 
 # C extensions
 *.so
@@ -111,6 +112,7 @@ ipython_config.py
 .pdm-python
 .pdm-build/
 
+
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
 
@@ -129,6 +131,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.devcontainer/
+.venv/
 
 # Spyder project settings
 .spyderproject

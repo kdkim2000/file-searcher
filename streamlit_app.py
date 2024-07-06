@@ -83,7 +83,7 @@ def get_regex(prompt):
             )
         messages = client.beta.threads.messages.list(thread_id=thread_id, run_id = run.id)
         regex_pattern = messages.data[0].content[0].text.value
-        return regex_pattern
+        return str(regex_pattern)
     except:
         # 오류가 발생하면 None을 반환
         return None   
@@ -97,7 +97,6 @@ def main():
     regex_pattern= ""
     if len(prompt) > 0 :
         regex_pattern = get_regex(prompt)
-    
     regex_pattern = st.text_input("정규식:", value=regex_pattern)
     regex_pattern = "r'{}'".format(regex_pattern.replace("`",""))
 
