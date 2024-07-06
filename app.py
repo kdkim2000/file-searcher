@@ -80,7 +80,7 @@ def get_regex(prompt):
     
 def main():
     st.title(":ladybug:")
-    root_folder = st.text_input("시작할 폴더")
+    root_folder = st.text_input("시작할 폴더:")
     exclude_extensions = st.text_input("제외할 확장자 (comma-separated):")
     include_extensions = st.text_input("포함할 확장자 (comma-separated):")
     prompt = st.text_input("검색하고 싶은 내용을 입력하세요")
@@ -90,7 +90,7 @@ def main():
         regex_pattern = get_regex(prompt)
     regex_pattern = st.text_input("정규식:", value=regex_pattern)
     regex_pattern = "r'{}'".format(regex_pattern.replace("`",""))
-    
+
     if st.button("Search Files"):
         exclude_extensions = [ext.strip().lower() for ext in exclude_extensions.split(',') if ext.strip()]
         include_extensions = [ext.strip().lower() for ext in include_extensions.split(',') if ext.strip()]
