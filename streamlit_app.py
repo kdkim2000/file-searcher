@@ -88,7 +88,7 @@ def get_regex(prompt):
         # 오류가 발생하면 None을 반환
         return None   
 def main():
-    st.title(":ladybug:")
+    st.title("👀")
     root_folder = st.text_input("시작할 폴더:")
     exclude_extensions = st.text_input("제외할 확장자 (comma-separated):")
     include_extensions = st.text_input("포함할 확장자 (comma-separated):")
